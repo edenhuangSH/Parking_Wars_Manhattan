@@ -1,0 +1,27 @@
+{
+"type": "FeatureCollection",
+"features": [
+{ "type": "Feature", "properties": { "Precinct": 1 }, "geometry": { "type": "Point", "coordinates": [ 980907.722659657942131, 197854.98025249686907 ] } },
+{ "type": "Feature", "properties": { "Precinct": 5 }, "geometry": { "type": "Point", "coordinates": [ 985041.130169476848096, 200285.747816119110212 ] } },
+{ "type": "Feature", "properties": { "Precinct": 6 }, "geometry": { "type": "Point", "coordinates": [ 983590.088790131150745, 206569.382851145230234 ] } },
+{ "type": "Feature", "properties": { "Precinct": 7 }, "geometry": { "type": "Point", "coordinates": [ 988700.428709005587734, 199930.451232736144448 ] } },
+{ "type": "Feature", "properties": { "Precinct": 9 }, "geometry": { "type": "Point", "coordinates": [ 988854.611063974327408, 203875.071648244338576 ] } },
+{ "type": "Feature", "properties": { "Precinct": 10 }, "geometry": { "type": "Point", "coordinates": [ 983782.26205714896787, 212718.003901377669536 ] } },
+{ "type": "Feature", "properties": { "Precinct": 13 }, "geometry": { "type": "Point", "coordinates": [ 988562.465974427526817, 208164.852633904607501 ] } },
+{ "type": "Feature", "properties": { "Precinct": 14 }, "geometry": { "type": "Point", "coordinates": [ 987813.559270447469316, 213263.286136237351457 ] } },
+{ "type": "Feature", "properties": { "Precinct": 17 }, "geometry": { "type": "Point", "coordinates": [ 992250.019240904133767, 212987.906027661287226 ] } },
+{ "type": "Feature", "properties": { "Precinct": 18 }, "geometry": { "type": "Point", "coordinates": [ 988404.208211070857942, 217366.797932140296325 ] } },
+{ "type": "Feature", "properties": { "Precinct": 19 }, "geometry": { "type": "Point", "coordinates": [ 996292.22001220122911, 220826.640578009188175 ] } },
+{ "type": "Feature", "properties": { "Precinct": 20 }, "geometry": { "type": "Point", "coordinates": [ 989318.969737385166809, 223230.252928987407358 ] } },
+{ "type": "Feature", "properties": { "Precinct": 22 }, "geometry": { "type": "Point", "coordinates": [ 993788.520145270391367, 224355.325003923295299 ] } },
+{ "type": "Feature", "properties": { "Precinct": 23 }, "geometry": { "type": "Point", "coordinates": [ 999608.055070486152545, 227534.145817582844757 ] } },
+{ "type": "Feature", "properties": { "Precinct": 24 }, "geometry": { "type": "Point", "coordinates": [ 992536.030881881830283, 229141.246394128829706 ] } },
+{ "type": "Feature", "properties": { "Precinct": 25 }, "geometry": { "type": "Point", "coordinates": [ 1003519.364189536892809, 229524.649674468528247 ] } },
+{ "type": "Feature", "properties": { "Precinct": 26 }, "geometry": { "type": "Point", "coordinates": [ 995626.750832765828818, 235107.469135389808798 ] } },
+{ "type": "Feature", "properties": { "Precinct": 28 }, "geometry": { "type": "Point", "coordinates": [ 997805.403753745020367, 232427.034322121879086 ] } },
+{ "type": "Feature", "properties": { "Precinct": 30 }, "geometry": { "type": "Point", "coordinates": [ 998210.0480119419517, 240244.180103772465372 ] } },
+{ "type": "Feature", "properties": { "Precinct": 32 }, "geometry": { "type": "Point", "coordinates": [ 1000670.966306224814616, 237763.311860518646426 ] } },
+{ "type": "Feature", "properties": { "Precinct": 33 }, "geometry": { "type": "Point", "coordinates": [ 1000725.642597302910872, 245711.121759606234264 ] } },
+{ "type": "Feature", "properties": { "Precinct": 34 }, "geometry": { "type": "Point", "coordinates": [ 1004419.037422697874717, 253363.714558355568442 ] } }
+]
+}
