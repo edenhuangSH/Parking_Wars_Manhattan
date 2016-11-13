@@ -1,8 +1,5 @@
 library(dplyr)
-library(ggplot2)
 library(sf)
-library(stringr)
-library(magrittr)
 
 # load data
 load('/data/nyc_parking/NYParkingViolations.Rdata')
@@ -27,6 +24,8 @@ nyc_man = nyc %>%
     select(address, precinct = Violation.Precinct)
 
 rm(nyc, pluto)
+
+# Clean data -------------------------------------------------------------
 
 # make sure data is in the right case
 nyc_man$address  = sapply(nyc_man$address, toupper)
@@ -60,10 +59,21 @@ for (i in seq_len(nrow(abbrev))) {
                             nyc_man$address, perl = TRUE)
 }
 
-
 # remove ordinal names, 1ST to 1, 2ND to 2, 3RD to 3, etc...
 ord = rbind(c('(?<=[0-9])ST\\b', ''),
             c('(?<=[0-9])ND\\b', ''),
             c('(?<=[0-9])RD\\b', ''),
             c('(?<=[0-9])TH\\b', '')
             )
+
+for (i in seq_len(nrow(ord))) {
+    pluto_xy$address = gsub(ord[i,1], ord[i,2],
+                            pluto_xy$address, perl = TRUE)
+    nyc_man$address  = gsub(ord[i,1], ord[i,2],
+                            nyc_man$address, perl = TRUE)
+}
+
+# merging data ----------------------------------------------------------
+
+nyc_geo = inner_join(nyc_man, pluto_xy)
+save(nyc_geo, file = "nyc_geo.Rdata")
