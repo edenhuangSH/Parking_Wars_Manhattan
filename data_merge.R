@@ -36,7 +36,7 @@ pluto_xy$address = sapply(pluto_xy$address, toupper)
 nyc_man$address = gsub('\\bNA \\b', '', nyc_man$address)
 
 # replace street abbreviations with long form
-# E with EAST, PL with PLACE, etc...
+# E with EAST, PL with PLACE, ST with STREET, etc...
 abbrev = rbind( c('(?<!\\/)\\bE\\b(?!\\/)', 'EAST'),
                 c('(?<!\\/)\\bW\\b(?!\\/)', 'WEST'),
                 c('(?<!\\/)\\bS\\b(?!\\/)', 'SOUTH'),
@@ -46,11 +46,11 @@ abbrev = rbind( c('(?<!\\/)\\bE\\b(?!\\/)', 'EAST'),
                 c('\\bBLVD\\b', 'BOULEVARD'),
                 c('\\bCT\\b', 'COURT'),
                 c('\\bCIR\\b', 'CIRCLE'),
-                c('\\bDR\\b', 'DRIVE'),
+                c('\\bDR[V]*\\b', 'DRIVE'),
                 c('\\bLN\\b', 'LANE'),
                 c('\\bRD\\b', 'ROAD'),
-                c('\bST$', 'STREET'),
-                c('\bSTR[T]*\b', 'STREET')
+                c('\\bST$', 'STREET'),
+                c('\\bSTR[T]*\\b', 'STREET')
                 )
 
 for (i in seq_len(nrow(abbrev))) {
@@ -61,4 +61,9 @@ for (i in seq_len(nrow(abbrev))) {
 }
 
 
-
+# remove ordinal names, 1ST to 1, 2ND to 2, 3RD to 3, etc...
+ord = rbind(c('(?<=[0-9])ST\\b', ''),
+            c('(?<=[0-9])ND\\b', ''),
+            c('(?<=[0-9])RD\\b', ''),
+            c('(?<=[0-9])TH\\b', '')
+            )
