@@ -34,22 +34,34 @@ pluto_xy$address = sapply(pluto_xy$address, toupper)
 # remove NA values due to no house address
 nyc_man$address = gsub('\\bNA \\b', '', nyc_man$address)
 
-# replace street abbreviations with long form
+# remove special characters, double spaces, etc...
+special_char = c('\\.', '\\,', '\\!', '\\#', '\\?', '(?<= ) +')
+
+for (i in seq_along(special_char)) {
+    pluto_xy$address = gsub(special_char[i], '',
+                            pluto_xy$address, perl = TRUE)
+    nyc_man$address  = gsub(special_char[i], '',
+                            nyc_man$address, perl = TRUE)
+}
+
+# replace place and street abbreviations with long form
 # E with EAST, PL with PLACE, ST with STREET, etc...
 abbrev = rbind( c('(?<!\\/)\\bE\\b(?!\\/)', 'EAST'),
                 c('(?<!\\/)\\bW\\b(?!\\/)', 'WEST'),
                 c('(?<!\\/)\\bS\\b(?!\\/)', 'SOUTH'),
                 c('(?<!\\/)\\bN\\b(?!\\/)', 'NORTH'),
                 c('\\bPL\\b', 'PLACE'),
-                c('\\bAVE\\b', 'AVENUE'),
-                c('\\bBLVD\\b', 'BOULEVARD'),
+                c('\\bAV[E]?\\b', 'AVENUE'),
+                c('\\bBLV[D]?\\b', 'BOULEVARD'),
                 c('\\bCT\\b', 'COURT'),
                 c('\\bCIR\\b', 'CIRCLE'),
-                c('\\bDR[V]*\\b', 'DRIVE'),
+                c('\\bDR[V]?\\b', 'DRIVE'),
                 c('\\bLN\\b', 'LANE'),
                 c('\\bRD\\b', 'ROAD'),
                 c('\\bST$', 'STREET'),
-                c('\\bSTR[T]*\\b', 'STREET')
+                c('\\bSTR[T]?\\b', 'STREET'),
+                c('\\bPLZ\\b', 'PLAZA'),
+                c('\\bMT\\b', 'MOUNT')
                 )
 
 for (i in seq_len(nrow(abbrev))) {
@@ -60,16 +72,26 @@ for (i in seq_len(nrow(abbrev))) {
 }
 
 # remove ordinal names, 1ST to 1, 2ND to 2, 3RD to 3, etc...
-ord = rbind(c('(?<=[0-9])ST\\b', ''),
-            c('(?<=[0-9])ND\\b', ''),
-            c('(?<=[0-9])RD\\b', ''),
-            c('(?<=[0-9])TH\\b', '')
-            )
+ord = c('(?<=[0-9])ST\\b', '(?<=[0-9])ND\\b', '(?<=[0-9])RD\\b',
+        '(?<=[0-9])TH\\b')
 
-for (i in seq_len(nrow(ord))) {
-    pluto_xy$address = gsub(ord[i,1], ord[i,2],
+for (i in seq_along(ord)) {
+    pluto_xy$address = gsub(ord[i], '',
                             pluto_xy$address, perl = TRUE)
-    nyc_man$address  = gsub(ord[i,1], ord[i,2],
+    nyc_man$address  = gsub(ord[i], '',
+                            nyc_man$address, perl = TRUE)
+}
+
+# new york street specific fixes
+man_names = rbind(c('\\bBWAY\\b', 'BROADWAY'),
+                  c('\\bST RI NY 10044\\b', 'STREET'),
+                  c('\\bF D R\\b', 'FDR')
+)
+
+for (i in seq_len(nrow(man_names))) {
+    pluto_xy$address = gsub(man_names[i,1], man_names[i,2],
+                            pluto_xy$address, perl = TRUE)
+    nyc_man$address  = gsub(man_names[i,1], man_names[i,2],
                             nyc_man$address, perl = TRUE)
 }
 
@@ -77,4 +99,3 @@ for (i in seq_len(nrow(ord))) {
 
 nyc_geo = inner_join(nyc_man, pluto_xy)
 save(nyc_geo, file = 'nyc_geo.Rdata')
-
