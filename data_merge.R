@@ -1,0 +1,68 @@
+library(dplyr)
+library(ggplot2)
+library(sf)
+library(stringr)
+library(magrittr)
+
+# load data
+load('/data/nyc_parking/NYParkingViolations.Rdata')
+pluto = st_read('/data/nyc_parking/pluto_manhattan/MNMapPLUTO.shp')
+
+# filter pluto to address, longitude and latitude
+pluto_xy = data.frame(
+    pluto$Address,
+    st_centroid(pluto) %>%
+        unlist() %>%
+        matrix(ncol=2,byrow=TRUE),
+    stringsAsFactors = FALSE
+) %>%
+    setNames(c('address', 'x', 'y'))
+
+# filter nyc to address and precint
+man_precincts = c(1, 5, 6, 7, 9, 10, 13, 14, 17, 18, 19, 20, 22, 23,
+                    24, 25, 26, 28, 30, 32, 33, 34)
+nyc_man = nyc %>%
+    mutate(address = paste(House.Number, Street.Name)) %>%
+    filter(Violation.Precinct %in% man_precincts) %>%
+    select(address, precinct = Violation.Precinct)
+
+rm(nyc, pluto)
+
+# make sure data is in the right case
+nyc_man$address  = sapply(nyc_man$address, toupper)
+pluto_xy$address = sapply(pluto_xy$address, toupper)
+
+# remove NA values due to no house address
+nyc_man$address = gsub('\\bNA \\b', '', nyc_man$address)
+
+# replace street abbreviations with long form
+# E with EAST, PL with PLACE, etc...
+abbrev = rbind( c('\\bE\\b', 'EAST'),
+                c('\\bW\\b', 'WEST'),
+                c('\\bS\\b', 'SOUTH'),
+                c('\\bN\\b', 'NORTH'),
+                c('\\bPL\\b', 'PLACE'),
+                c('\\bAVE\\b', 'AVENUE'),
+                c('\\bBLVD\\b', 'BOULEVARD'),
+                c('\\bCT\\b', 'COURT'),
+                c('\\bCIR\\b', 'CIRCLE'),
+                c('\\bDR\\b', 'DRIVE'),
+                c('\\bLN\\b', 'LANE'),
+                c('\\bRD\\b', 'ROAD'),
+                c('\\bSTR\\b', 'STREET'),
+                c('\\bSTRT\\b', 'STREET')
+                )
+
+for (i in nrow(abbrev)) {
+    pluto_xy$address = gsub(abbrev[i,1], abbrev[i,2],
+                            pluto_xy$address)
+    nyc_man$address  = gsub(abbrev[i,1],abbrev[i,2],
+                            nyc_man$address)
+}
+
+
+pluto_xy$address = gsub('\\bST\\b(?!N)', 'STREET', pluto_xy$address)
+nyc_man$address  = gsub('\\bST\\b', 'STREET', nyc_man$address)
+
+
+
