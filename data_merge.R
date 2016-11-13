@@ -37,10 +37,10 @@ nyc_man$address = gsub('\\bNA \\b', '', nyc_man$address)
 
 # replace street abbreviations with long form
 # E with EAST, PL with PLACE, etc...
-abbrev = rbind( c('\\bE\\b', 'EAST'),
-                c('\\bW\\b', 'WEST'),
-                c('\\bS\\b', 'SOUTH'),
-                c('\\bN\\b', 'NORTH'),
+abbrev = rbind( c('(?<!\\/)\\bE\\b(?!\\/)', 'EAST'),
+                c('(?<!\\/)\\bW\\b(?!\\/)', 'WEST'),
+                c('(?<!\\/)\\bS\\b(?!\\/)', 'SOUTH'),
+                c('(?<!\\/)\\bN\\b(?!\\/)', 'NORTH'),
                 c('\\bPL\\b', 'PLACE'),
                 c('\\bAVE\\b', 'AVENUE'),
                 c('\\bBLVD\\b', 'BOULEVARD'),
@@ -49,20 +49,16 @@ abbrev = rbind( c('\\bE\\b', 'EAST'),
                 c('\\bDR\\b', 'DRIVE'),
                 c('\\bLN\\b', 'LANE'),
                 c('\\bRD\\b', 'ROAD'),
-                c('\\bSTR\\b', 'STREET'),
-                c('\\bSTRT\\b', 'STREET')
+                c('\bST$', 'STREET'),
+                c('\bSTR[T]*\b', 'STREET')
                 )
 
-for (i in nrow(abbrev)) {
+for (i in seq_len(nrow(abbrev))) {
     pluto_xy$address = gsub(abbrev[i,1], abbrev[i,2],
-                            pluto_xy$address)
+                            pluto_xy$address, perl = TRUE)
     nyc_man$address  = gsub(abbrev[i,1],abbrev[i,2],
-                            nyc_man$address)
+                            nyc_man$address, perl = TRUE)
 }
-
-
-pluto_xy$address = gsub('\\bST\\b(?!N)', 'STREET', pluto_xy$address)
-nyc_man$address  = gsub('\\bST\\b', 'STREET', nyc_man$address)
 
 
 
