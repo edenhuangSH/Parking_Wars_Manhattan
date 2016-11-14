@@ -5,10 +5,8 @@ date: "11/14/2016"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 ## Setup
+
 ```{r}
 library(raster, quietly = T) # load before dplyr to avoid select bs
 
@@ -18,7 +16,9 @@ library(sf, quietly = T)
 library(sp, quietly = T)
 library(randomForest, quietly = T)
 ```
+
 ## Task 1 GeoCoding
+
 ```{r}
 # load data
 load('/data/nyc_parking/NYParkingViolations.Rdata')
@@ -123,6 +123,7 @@ save(nyc_geo, file = 'nyc_geo.Rdata')
 
 
 ## Task 2: Recreating NYC’s Police Precincts
+
 Load data and plot the precincts on map to get an idea of the boundaries
 ```{r}
 load(file="nyc_geo.Rdata")
@@ -133,6 +134,7 @@ plot(coord, col=nyc_geo$precinct, pch=18, cex=0.5, axes=TRUE)
 ```
 
 Get Manhattan Info
+
 ```{r}
 nybb = st_read("/data/nyc_parking/nybb/", quiet=TRUE)
 manh = nybb %>% filter(BoroName == "Manhattan")
@@ -146,6 +148,7 @@ plot(r)
 ```
 
 Get prediction locations
+
 ```{r}
 pred_cells = which(!is.na(r[]))
 pred_locs = xyFromCell(r, pred_cells) %>% as_data_frame()
@@ -153,6 +156,7 @@ plot(pred_locs, pch=16, cex=0.1)
 ```
 
 Identify outliers of each precinct, so get rid of the 1% extreme values of each precinct (except for 22 since it only has 252 points) and sample 3% of the values. Instead, I duplicate the size of precinct 22 by 10
+
 ```{r}
 nyc_geo_reduced = NULL
 for (p in man_precincts) {
@@ -175,6 +179,7 @@ for (p in man_precincts) {
 ```
 
 Perform Random Forest and predict
+
 ```{r}
 model = randomForest(as.factor(precinct)~x+y,data=nyc_geo_reduced,na.action = na.omit,cross=5)
 rf.pred = predict(model,pred_locs)
@@ -182,12 +187,12 @@ r.rf = r
 r.rf[pred_cells] = as.numeric(rf.pred)
 ```
 
-Draw the polygons:
+Draw the polygons
+
 ```{r}
 source("polygonizer.R")
 p = polygonizer(r.rf)
-p = st_transform(p, 4326) # Trying to figure out what is 4326 here
+p = st_transform(p, 4326)
 plot(p)
-
 ```
 
