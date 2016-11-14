@@ -1,0 +1,193 @@
+---
+title: "STA523 HW6"
+author: "Shaoji Li, Faustine Li, Eden Huang, Yumemichi Fujita"
+date: "11/14/2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Setup
+```{r}
+library(raster, quietly = T) # load before dplyr to avoid select bs
+
+library(dplyr, quietly = T)
+library(ggplot2, quietly = T)
+library(sf, quietly = T)
+library(sp, quietly = T)
+library(randomForest, quietly = T)
+```
+## Task 1 GeoCoding
+```{r}
+# load data
+load('/data/nyc_parking/NYParkingViolations.Rdata')
+pluto = st_read('/data/nyc_parking/pluto_manhattan/MNMapPLUTO.shp')
+
+# filter pluto to address, longitude and latitude
+pluto_xy = data.frame(
+    pluto$Address,
+    st_centroid(pluto) %>%
+        unlist() %>%
+        matrix(ncol=2,byrow=TRUE),
+    stringsAsFactors = FALSE
+) %>%
+    setNames(c('address', 'x', 'y'))
+
+# filter nyc to address and precint
+man_precincts = c(1, 5, 6, 7, 9, 10, 13, 14, 17, 18, 19, 20, 22, 23,
+                    24, 25, 26, 28, 30, 32, 33, 34)
+nyc_man = nyc %>%
+    mutate(address = paste(House.Number, Street.Name)) %>%
+    filter(Violation.Precinct %in% man_precincts) %>%
+    select(address, precinct = Violation.Precinct)
+
+rm(nyc, pluto)
+
+# Clean data -------------------------------------------------------------
+
+# make sure data is in the right case
+nyc_man$address  = sapply(nyc_man$address, toupper)
+pluto_xy$address = sapply(pluto_xy$address, toupper)
+
+# remove NA values due to no house address
+nyc_man$address = gsub('\\bNA \\b', '', nyc_man$address)
+
+# remove special characters, double spaces, etc...
+special_char = c('\\.', '\\,', '\\!', '\\#', '\\?', '(?<= ) +')
+
+for (i in seq_along(special_char)) {
+    pluto_xy$address = gsub(special_char[i], '',
+                            pluto_xy$address, perl = TRUE)
+    nyc_man$address  = gsub(special_char[i], '',
+                            nyc_man$address, perl = TRUE)
+}
+
+# replace place and street abbreviations with long form
+# E with EAST, PL with PLACE, ST with STREET, etc...
+abbrev = rbind( c('(?<!\\/)\\bE\\b(?!\\/)', 'EAST'),
+                c('(?<!\\/)\\bW\\b(?!\\/)', 'WEST'),
+                c('(?<!\\/)\\bS\\b(?!\\/)', 'SOUTH'),
+                c('(?<!\\/)\\bN\\b(?!\\/)', 'NORTH'),
+                c('\\bPL\\b', 'PLACE'),
+                c('\\bAV[E]?\\b', 'AVENUE'),
+                c('\\bBLV[D]?\\b', 'BOULEVARD'),
+                c('\\bCT\\b', 'COURT'),
+                c('\\bCIR\\b', 'CIRCLE'),
+                c('\\bDR[V]?\\b', 'DRIVE'),
+                c('\\bLN\\b', 'LANE'),
+                c('\\bRD\\b', 'ROAD'),
+                c('\\bST$', 'STREET'),
+                c('\\bSTR[T]?\\b', 'STREET'),
+                c('\\bPLZ\\b', 'PLAZA'),
+                c('\\bMT\\b', 'MOUNT')
+                )
+
+for (i in seq_len(nrow(abbrev))) {
+    pluto_xy$address = gsub(abbrev[i,1], abbrev[i,2],
+                            pluto_xy$address, perl = TRUE)
+    nyc_man$address  = gsub(abbrev[i,1],abbrev[i,2],
+                            nyc_man$address, perl = TRUE)
+}
+
+# remove ordinal names, 1ST to 1, 2ND to 2, 3RD to 3, etc...
+ord = c('(?<=[0-9])ST\\b', '(?<=[0-9])ND\\b', '(?<=[0-9])RD\\b',
+        '(?<=[0-9])TH\\b')
+
+for (i in seq_along(ord)) {
+    pluto_xy$address = gsub(ord[i], '',
+                            pluto_xy$address, perl = TRUE)
+    nyc_man$address  = gsub(ord[i], '',
+                            nyc_man$address, perl = TRUE)
+}
+
+# new york street specific fixes
+man_names = rbind(c('\\bBWAY\\b', 'BROADWAY'),
+                  c('\\bST RI NY 10044\\b', 'STREET'),
+                  c('\\bF D R\\b', 'FDR')
+)
+
+for (i in seq_len(nrow(man_names))) {
+    pluto_xy$address = gsub(man_names[i,1], man_names[i,2],
+                            pluto_xy$address, perl = TRUE)
+    nyc_man$address  = gsub(man_names[i,1], man_names[i,2],
+                            nyc_man$address, perl = TRUE)
+}
+
+# merging data ----------------------------------------------------------
+
+nyc_geo = inner_join(nyc_man, pluto_xy)
+save(nyc_geo, file = 'nyc_geo.Rdata')
+```
+
+
+
+## Task 2: Recreating NYC’s Police Precincts
+Load data and plot the precincts on map to get an idea of the boundaries
+```{r}
+load(file="nyc_geo.Rdata")
+# ggplot(nyc_geo, aes(x=x,y=y,color=factor(precinct))) + geom_point()
+latlon=data.frame("lon" = nyc_geo$x, "lat" = nyc_geo$y)
+coord=SpatialPoints(latlon)
+plot(coord, col=nyc_geo$precinct, pch=18, cex=0.5, axes=TRUE)
+```
+
+Get Manhattan Info
+```{r}
+nybb = st_read("/data/nyc_parking/nybb/", quiet=TRUE)
+manh = nybb %>% filter(BoroName == "Manhattan")
+#plot(manh,axes=TRUE)
+
+library(raster)
+ext = st_bbox(manh) %>% .[c("xmin","xmax","ymin","ymax")] %>% extent()
+r = raster(ext, ncol=100, nrow=300)
+r = rasterize(as(manh,"Spatial"),r)
+plot(r)
+```
+
+Get prediction locations
+```{r}
+pred_cells = which(!is.na(r[]))
+pred_locs = xyFromCell(r, pred_cells) %>% as_data_frame()
+plot(pred_locs, pch=16, cex=0.1)
+```
+
+Identify outliers of each precinct, so get rid of the 1% extreme values of each precinct (except for 22 since it only has 252 points) and sample 3% of the values. Instead, I duplicate the size of precinct 22 by 10
+```{r}
+nyc_geo_reduced = NULL
+for (p in man_precincts) {
+  if (p == 22) {
+    res = nyc_geo[which(nyc_geo$precinct == p),]
+    nyc_geo_reduced = rbind(nyc_geo_reduced,
+                            do.call("rbind", replicate(10, res, simplify = FALSE)))
+  } else {
+    res = nyc_geo[which(nyc_geo$precinct == p),]
+    lon.quantile = unname(quantile(res$x, probs = c(0.005, 0.995)))
+    lat.quantile = unname(quantile(res$y, probs = c(0.005, 0.995)))
+    res.filt = res[(res$x <= lon.quantile[2] & res$x >= lon.quantile[1]) &
+                     (res$y <= lat.quantile[2] & res$y >= lat.quantile[1]),]
+    n = nrow(res.filt)
+    idx = sort(sample(1:n,round(0.03*n),replace = F))
+    res.filt.samp = res.filt[idx,]
+    nyc_geo_reduced = rbind(nyc_geo_reduced, res.filt.samp)
+  }
+}
+```
+
+Perform Random Forest and predict
+```{r}
+model = randomForest(as.factor(precinct)~x+y,data=nyc_geo_reduced,na.action = na.omit,cross=5)
+rf.pred = predict(model,pred_locs)
+r.rf = r
+r.rf[pred_cells] = as.numeric(rf.pred)
+```
+
+Draw the polygons:
+```{r}
+source("polygonizer.R")
+p = polygonizer(r.rf)
+p = st_transform(p, 4326) # Trying to figure out what is 4326 here
+plot(p)
+
+```
+
