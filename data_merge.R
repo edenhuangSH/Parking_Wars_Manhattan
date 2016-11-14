@@ -99,3 +99,7 @@ for (i in seq_len(nrow(man_names))) {
 
 nyc_geo = inner_join(nyc_man, pluto_xy)
 save(nyc_geo, file = 'nyc_geo.Rdata')
+
+ggplot(nyc_geo, aes(x = x, y = y, color=factor(precinct))) +
+    geom_point(size=0.1) +
+    theme_bw()
