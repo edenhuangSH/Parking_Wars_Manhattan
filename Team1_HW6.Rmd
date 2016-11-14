@@ -151,7 +151,7 @@ Get prediction locations
 
 ```{r}
 pred_cells = which(!is.na(r[]))
-pred_locs = xyFromCell(r, pred_cells) %>% as_data_frame()
+pred_locs = xyFromCell(r, pred_cells)
 plot(pred_locs, pch=16, cex=0.1)
 ```
 
@@ -181,7 +181,10 @@ for (p in man_precincts) {
 Perform Random Forest and predict
 
 ```{r}
-model = randomForest(as.factor(precinct)~x+y,data=nyc_geo_reduced,na.action = na.omit,cross=5)
+model = randomForest(as.factor(precinct)~x+y,
+                     data=nyc_geo_reduced,
+                     na.action = na.omit,
+                     cross=5)
 rf.pred = predict(model,pred_locs)
 r.rf = r
 r.rf[pred_cells] = as.numeric(rf.pred)
@@ -194,5 +197,6 @@ source("polygonizer.R")
 p = polygonizer(r.rf)
 p = st_transform(p, 4326)
 plot(p)
+st_write(p,"precincts.json", "data", driver="GeoJSON", quiet=TRUE)
 ```
 
