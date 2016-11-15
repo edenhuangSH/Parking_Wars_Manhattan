@@ -155,19 +155,23 @@ pred_locs = xyFromCell(r, pred_cells)
 plot(pred_locs, pch=16, cex=0.1)
 ```
 
-Identify outliers of each precinct, so get rid of the 1% extreme values of each precinct (except for 22 since it only has 252 points) and sample 3% of the values. Instead, I duplicate the size of precinct 22 by 10
+Identify outliers of each precinct, so get rid of the 5% extreme values of each precinct (except for 22 since it only has 252 points) and sample 3% of the values. Instead, I consider precinct 22 separately
 
 ```{r}
 nyc_geo_reduced = NULL
 for (p in man_precincts) {
   if (p == 22) {
     res = nyc_geo[which(nyc_geo$precinct == p),]
-    nyc_geo_reduced = rbind(nyc_geo_reduced,
-                            do.call("rbind", replicate(10, res, simplify = FALSE)))
+    #nyc_geo_reduced = rbind(nyc_geo_reduced,
+    #                        do.call("rbind", replicate(10, res, simplify = #FALSE)))
+    x.min = min(res$x)
+    x.max = max(res$x)
+    y.min = min(res$y)
+    y.max = max(res$y)
   } else {
     res = nyc_geo[which(nyc_geo$precinct == p),]
-    lon.quantile = unname(quantile(res$x, probs = c(0.005, 0.995)))
-    lat.quantile = unname(quantile(res$y, probs = c(0.005, 0.995)))
+    lon.quantile = unname(quantile(res$x, probs = c(0.025, 0.975)))
+    lat.quantile = unname(quantile(res$y, probs = c(0.025, 0.975)))
     res.filt = res[(res$x <= lon.quantile[2] & res$x >= lon.quantile[1]) &
                      (res$y <= lat.quantile[2] & res$y >= lat.quantile[1]),]
     n = nrow(res.filt)
@@ -184,12 +188,16 @@ Perform Random Forest and predict
 model = randomForest(as.factor(precinct)~x+y,
                      data=nyc_geo_reduced,
                      na.action = na.omit,
-                     ntree = 500,
-                     mtry = 2,
+                     #ntree = 500,
+                     #mtry = 2,
                      cross = 5)
-rf.pred = predict(model,pred_locs)
+idx22 = which((pred_locs[,'x'] >= x.min & pred_locs[,'x'] <= x.max) & 
+  (pred_locs[,'y'] >= y.min & pred_locs[,'y'] <= y.max))
+rf.pred = numeric(length(pred_cells))
+rf.pred[idx22] = 22
+rf.pred[-idx22] = as.numeric(as.character(predict(model,pred_locs[-idx22,])))
 r.rf = r
-r.rf[pred_cells] = as.numeric(as.character(rf.pred))
+r.rf[pred_cells] = rf.pred
 ```
 
 Draw the polygons
