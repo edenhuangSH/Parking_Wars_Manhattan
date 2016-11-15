@@ -120,10 +120,10 @@ m = xgboost(data=x,
             objective="multi:softmax", 
             num_class=length(precincts))
 
-pred_xg = predict(m, newdata=as.matrix(pred_locs))
-pred_xg = precincts[pred_xg+1]
+pred_xgb = predict(m, newdata=as.matrix(pred_locs))
+pred_xgb = precincts[pred_xg+1]
 r.xgb = r
-r.xgb[pred_cells] = as.numeric(pred_xg)
+r.xgb[pred_cells] = as.numeric(pred_xgb)
 ```
 
 Draw the polygons
