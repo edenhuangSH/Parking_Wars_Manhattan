@@ -184,7 +184,9 @@ Perform Random Forest and predict
 model = randomForest(as.factor(precinct)~x+y,
                      data=nyc_geo_reduced,
                      na.action = na.omit,
-                     cross=5)
+                     ntree = 500,
+                     mtry = 2,
+                     cross = 5)
 rf.pred = predict(model,pred_locs)
 r.rf = r
 r.rf[pred_cells] = as.numeric(rf.pred)
