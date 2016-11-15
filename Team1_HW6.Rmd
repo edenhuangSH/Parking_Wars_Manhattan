@@ -189,7 +189,7 @@ model = randomForest(as.factor(precinct)~x+y,
                      cross = 5)
 rf.pred = predict(model,pred_locs)
 r.rf = r
-r.rf[pred_cells] = as.numeric(rf.pred)
+r.rf[pred_cells] = as.numeric(as.character(rf.pred))
 ```
 
 Draw the polygons
