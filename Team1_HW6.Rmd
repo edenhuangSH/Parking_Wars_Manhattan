@@ -7,129 +7,22 @@ output: html_document
 
 ## Setup
 
-```{r}
-library(raster, quietly = T) # load before dplyr to avoid select bs
-
-library(dplyr, quietly = T)
-library(ggplot2, quietly = T)
-library(sf, quietly = T)
-library(sp, quietly = T)
-library(randomForest, quietly = T)
+```{r, message=FALSE}
+library(raster)
+library(dplyr)
+library(ggplot2)
+library(sf)
+library(sp)
+library(randomForest)
 ```
-
-## Task 1 GeoCoding
-
-```{r}
-# load data
-load('/data/nyc_parking/NYParkingViolations.Rdata')
-pluto = st_read('/data/nyc_parking/pluto_manhattan/MNMapPLUTO.shp')
-
-# filter pluto to address, longitude and latitude
-pluto_xy = data.frame(
-    pluto$Address,
-    st_centroid(pluto) %>%
-        unlist() %>%
-        matrix(ncol=2,byrow=TRUE),
-    stringsAsFactors = FALSE
-) %>%
-    setNames(c('address', 'x', 'y'))
-
-# filter nyc to address and precint
-man_precincts = c(1, 5, 6, 7, 9, 10, 13, 14, 17, 18, 19, 20, 22, 23,
-                    24, 25, 26, 28, 30, 32, 33, 34)
-nyc_man = nyc %>%
-    mutate(address = paste(House.Number, Street.Name)) %>%
-    filter(Violation.Precinct %in% man_precincts) %>%
-    select(address, precinct = Violation.Precinct)
-
-rm(nyc, pluto)
-
-# Clean data -------------------------------------------------------------
-
-# make sure data is in the right case
-nyc_man$address  = sapply(nyc_man$address, toupper)
-pluto_xy$address = sapply(pluto_xy$address, toupper)
-
-# remove NA values due to no house address
-nyc_man$address = gsub('\\bNA \\b', '', nyc_man$address)
-
-# remove special characters, double spaces, etc...
-special_char = c('\\.', '\\,', '\\!', '\\#', '\\?', '(?<= ) +')
-
-for (i in seq_along(special_char)) {
-    pluto_xy$address = gsub(special_char[i], '',
-                            pluto_xy$address, perl = TRUE)
-    nyc_man$address  = gsub(special_char[i], '',
-                            nyc_man$address, perl = TRUE)
-}
-
-# replace place and street abbreviations with long form
-# E with EAST, PL with PLACE, ST with STREET, etc...
-abbrev = rbind( c('(?<!\\/)\\bE\\b(?!\\/)', 'EAST'),
-                c('(?<!\\/)\\bW\\b(?!\\/)', 'WEST'),
-                c('(?<!\\/)\\bS\\b(?!\\/)', 'SOUTH'),
-                c('(?<!\\/)\\bN\\b(?!\\/)', 'NORTH'),
-                c('\\bPL\\b', 'PLACE'),
-                c('\\bAV[E]?\\b', 'AVENUE'),
-                c('\\bBLV[D]?\\b', 'BOULEVARD'),
-                c('\\bCT\\b', 'COURT'),
-                c('\\bCIR\\b', 'CIRCLE'),
-                c('\\bDR[V]?\\b', 'DRIVE'),
-                c('\\bLN\\b', 'LANE'),
-                c('\\bRD\\b', 'ROAD'),
-                c('\\bST$', 'STREET'),
-                c('\\bSTR[T]?\\b', 'STREET'),
-                c('\\bPLZ\\b', 'PLAZA'),
-                c('\\bMT\\b', 'MOUNT')
-                )
-
-for (i in seq_len(nrow(abbrev))) {
-    pluto_xy$address = gsub(abbrev[i,1], abbrev[i,2],
-                            pluto_xy$address, perl = TRUE)
-    nyc_man$address  = gsub(abbrev[i,1],abbrev[i,2],
-                            nyc_man$address, perl = TRUE)
-}
-
-# remove ordinal names, 1ST to 1, 2ND to 2, 3RD to 3, etc...
-ord = c('(?<=[0-9])ST\\b', '(?<=[0-9])ND\\b', '(?<=[0-9])RD\\b',
-        '(?<=[0-9])TH\\b')
-
-for (i in seq_along(ord)) {
-    pluto_xy$address = gsub(ord[i], '',
-                            pluto_xy$address, perl = TRUE)
-    nyc_man$address  = gsub(ord[i], '',
-                            nyc_man$address, perl = TRUE)
-}
-
-# new york street specific fixes
-man_names = rbind(c('\\bBWAY\\b', 'BROADWAY'),
-                  c('\\bST RI NY 10044\\b', 'STREET'),
-                  c('\\bF D R\\b', 'FDR')
-)
-
-for (i in seq_len(nrow(man_names))) {
-    pluto_xy$address = gsub(man_names[i,1], man_names[i,2],
-                            pluto_xy$address, perl = TRUE)
-    nyc_man$address  = gsub(man_names[i,1], man_names[i,2],
-                            nyc_man$address, perl = TRUE)
-}
-
-# merging data ----------------------------------------------------------
-
-nyc_geo = inner_join(nyc_man, pluto_xy)
-save(nyc_geo, file = 'nyc_geo.Rdata')
-```
-
-
 
 ## Task 2: Recreating NYC’s Police Precincts
 
 Load data and plot the precincts on map to get an idea of the boundaries
 ```{r}
-load(file="nyc_geo.Rdata")
-# ggplot(nyc_geo, aes(x=x,y=y,color=factor(precinct))) + geom_point()
-latlon=data.frame("lon" = nyc_geo$x, "lat" = nyc_geo$y)
-coord=SpatialPoints(latlon)
+nyc_geo = readRDS(file='nyc_geo.RDS')
+latlon = data.frame('lon' = nyc_geo$x, 'lat' = nyc_geo$y)
+coord = SpatialPoints(latlon)
 plot(coord, col=nyc_geo$precinct, pch=18, cex=0.5, axes=TRUE)
 ```
 
@@ -155,48 +48,92 @@ pred_locs = xyFromCell(r, pred_cells)
 plot(pred_locs, pch=16, cex=0.1)
 ```
 
-Identify outliers of each precinct, so get rid of the 1% extreme values of each precinct (except for 22 since it only has 252 points) and sample 3% of the values. Instead, I duplicate the size of precinct 22 by 10
-
 ```{r}
-nyc_geo_reduced = NULL
-for (p in man_precincts) {
-  if (p == 22) {
-    res = nyc_geo[which(nyc_geo$precinct == p),]
-    nyc_geo_reduced = rbind(nyc_geo_reduced,
-                            do.call("rbind", replicate(10, res, simplify = FALSE)))
-  } else {
-    res = nyc_geo[which(nyc_geo$precinct == p),]
-    lon.quantile = unname(quantile(res$x, probs = c(0.005, 0.995)))
-    lat.quantile = unname(quantile(res$y, probs = c(0.005, 0.995)))
-    res.filt = res[(res$x <= lon.quantile[2] & res$x >= lon.quantile[1]) &
-                     (res$y <= lat.quantile[2] & res$y >= lat.quantile[1]),]
-    n = nrow(res.filt)
-    idx = sort(sample(1:n,round(0.03*n),replace = F))
-    res.filt.samp = res.filt[idx,]
-    nyc_geo_reduced = rbind(nyc_geo_reduced, res.filt.samp)
-  }
+man_precincts = c(1, 5, 6, 7, 9, 10, 13, 14, 17, 18, 19, 20, 22, 23,
+                  24, 25, 26, 28, 30, 32, 33, 34)
+nyc_geo_reduced = data.frame()
+nsamp = 1000
+for (i in man_precincts) {
+    
+    x = nyc_geo[nyc_geo$precinct == i,]$x
+    y = nyc_geo[nyc_geo$precinct == i,]$y
+    
+    # reject samples that are outside 90% quantile
+    indx = which(x > quantile(x, 0.05) & x < quantile(x, 0.95))
+    indy = which(y > quantile(y, 0.05) & y < quantile(y, 0.95))
+    ind = intersect(indx, indy)
+    x = x[ind]
+    y = y[ind]
+    n = length(ind)
+    
+    if (n > nsamp) {
+        # sample nsamp number of observations from each precinct
+        k = sample(seq_len(n), nsamp)
+        x = x[k]
+        y = y[k]
+        n = nsamp
+    }
+    nyc_geo_reduced = rbind(nyc_geo_reduced, cbind(x, y, rep(i, n)))
 }
+nyc_geo_reduced = setNames(nyc_geo_reduced, c('x', 'y', 'precinct'))
 ```
 
-Perform Random Forest and predict
+```{r}
+latlon = data.frame('lon' = nyc_geo_reduced$x, 
+                    'lat' = nyc_geo_reduced$y)
+coord = SpatialPoints(latlon)
+plot(coord, col=nyc_geo_reduced$precinct, pch=18, cex=0.5, axes=TRUE)
+```
 
 ```{r}
-model = randomForest(as.factor(precinct)~x+y,
-                     data=nyc_geo_reduced,
-                     na.action = na.omit,
-                     cross=5)
-rf.pred = predict(model,pred_locs)
-r.rf = r
-r.rf[pred_cells] = as.numeric(rf.pred)
+library(xgboost)
+
+precincts = factor(nyc_geo_reduced$precinct) %>% levels()
+y = (factor(nyc_geo_reduced$precinct) %>% as.integer()) - 1L
+x = nyc_geo_reduced %>% select(x,y) %>% as.matrix()
+
+dtrain = xgb.DMatrix(x, label = y)
+dtest  = xgb.DMatrix(pred_locs)
+
+set.seed(0)
+xgb_params = list(
+    seed = 0,
+    colsample_bytree = 0.8,
+    subsample = 0.8,
+    eta = 0.1,
+    objective = 'multi:softmax',
+    max_depth = 6,
+    min_child_weight = 100
+    )
+
+res = xgb.cv(data = dtrain,
+             nround = 1000,
+             early_stopping_rounds = 20,
+             nfold = 5,
+             objective = 'multi:softmax',
+             num_class = length(precincts))
+
+m = xgboost(data=x, 
+            label=y, 
+            nthead=4, 
+            nround=res$best_iteration, 
+            objective="multi:softmax", 
+            num_class=length(precincts))
+
+pred_xgb = predict(m, newdata=as.matrix(pred_locs))
+pred_xgb = precincts[pred_xg+1]
+r.xgb = r
+r.xgb[pred_cells] = as.numeric(pred_xgb)
 ```
 
 Draw the polygons
 
 ```{r}
 source("polygonizer.R")
-p = polygonizer(r.rf)
+p = polygonizer(r.xgb)
 p = st_transform(p, 4326)
 plot(p)
+
 st_write(p,"precincts.json", "data", driver="GeoJSON", quiet=TRUE)
 ```
 

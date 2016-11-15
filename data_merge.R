@@ -98,4 +98,4 @@ for (i in seq_len(nrow(man_names))) {
 # merging data ----------------------------------------------------------
 
 nyc_geo = inner_join(nyc_man, pluto_xy)
-save(nyc_geo, file = 'nyc_geo.Rdata')
+saveRDS(nyc_geo, 'nyc_geo.RDS')
