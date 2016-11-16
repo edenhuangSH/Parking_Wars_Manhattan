@@ -7,17 +7,17 @@ build:
       code: |
         echo "Hello world"
         curl -s "$PP" > pp.Rdata
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team0"  -u "$ORCH:" > Team0.json
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team1"  -u "$ORCH:" > Team1.json
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team2"  -u "$ORCH:" > Team2.json
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team3"  -u "$ORCH:" > Team3.json
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team4"  -u "$ORCH:" > Team4.json
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team5"  -u "$ORCH:" > Team5.json
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team6"  -u "$ORCH:" > Team6.json
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team7"  -u "$ORCH:" > Team7.json
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team8"  -u "$ORCH:" > Team8.json
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team9"  -u "$ORCH:" > Team9.json
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team10" -u "$ORCH:" > Team10.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team0"  -u "$ORCH:" > Team0.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team1"  -u "$ORCH:" > Team1.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team2"  -u "$ORCH:" > Team2.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team3"  -u "$ORCH:" > Team3.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team4"  -u "$ORCH:" > Team4.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team5"  -u "$ORCH:" > Team5.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team6"  -u "$ORCH:" > Team6.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team7"  -u "$ORCH:" > Team7.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team8"  -u "$ORCH:" > Team8.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team9"  -u "$ORCH:" > Team9.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team10" -u "$ORCH:" > Team10.json
     - script:
       name: Update scores
       code: |
