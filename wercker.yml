@@ -14,8 +14,7 @@ build:
     - script:
       name: Install packages
       code: |
-        Rscript -e "install.packages(c('jsonlite','rgdal','rgeos'), repos='https://cran.rstudio.com')"
-        Rscript -e "library(devtools); install_github('edzer/sfr')"
+        Rscript -e "install.packages(c('jsonlite','rgdal','rgeos','sf'), repos='https://cran.rstudio.com')"
     - script: 
       name: Get scores
       code: |

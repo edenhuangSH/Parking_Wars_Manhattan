@@ -20,12 +20,50 @@ pred_locs = xyFromCell(r, pred_cells)
 
 # sample from nyc geo data ----------------------------------------------
 
-man_precincts = c(1, 5, 6, 7, 9, 10, 13, 14, 17, 18, 19, 20, 23,
+man_precincts = c(1, 5, 6, 7, 9, 10, 13, 14, 17, 18, 19, 20, 22, 23,
                   24, 25, 26, 28, 30, 32, 33, 34)
 nyc_geo_reduced = data.frame()
 nsamp = 1000
 for (i in man_precincts) {
+    if (i == 22) {
+    # x.orig = nyc_geo[nyc_geo$precinct == i,]$x
+    # y.orig = nyc_geo[nyc_geo$precinct == i,]$y
+    # n.orig = length(x.orig)
+    # Create dummy coordinates for Central Park (Precinct 22).
+    # Four corners of the Central Park (from Google map)
+    x.NW = -73.958176
+    y.NW = 40.800624
+    x.NE = -73.949289
+    y.NE = 40.796898
+    x.SW = -73.981894
+    y.SW = 40.768067
+    x.SE = -73.973004
+    y.SE = 40.764324
 
+    # Separate the quadrangle into 2 triangles
+    # with the upper triangle with NW, SW and NE corners
+    # and the lower triangle with NE, SW and SE corners
+    # Since their areas are similar, we may generate equal
+    # numbers of dummy points within them, say 500
+
+    # Refernce: http://stackoverflow.com/questions/4778147/sample-random-point-in-triangle
+    # Upper Triangle
+    r1 = runif(nsamp/2)
+    r2 = runif(nsamp/2)
+    rand.upper.x = (1 - sqrt(r1)) * x.NW + (sqrt(r1) * (1 - r2)) * x.SW + (sqrt(r1) * r2) * x.NE
+    rand.upper.y = (1 - sqrt(r1)) * y.NW + (sqrt(r1) * (1 - r2)) * y.SW + (sqrt(r1) * r2) * y.NE
+
+    # Lower Triangle
+    r1 = runif(nsamp/2)
+    r2 = runif(nsamp/2)
+    rand.lower.x = (1 - sqrt(r1)) * x.SE + (sqrt(r1) * (1 - r2)) * x.SW + (sqrt(r1) * r2) * x.NE
+    rand.lower.y = (1 - sqrt(r1)) * y.SE + (sqrt(r1) * (1 - r2)) * y.SW + (sqrt(r1) * r2) * y.NE
+
+    x = c(rand.upper.x,rand.lower.x)
+    y = c(rand.upper.y,rand.lower.y)
+    n = length(rand.lower.x)+length(rand.upper.x)
+
+  } else {
     x = nyc_geo[nyc_geo$precinct == i,]$x
     y = nyc_geo[nyc_geo$precinct == i,]$y
 
@@ -38,50 +76,18 @@ for (i in man_precincts) {
     n = length(ind)
 
     if (n > nsamp) {
-        # sample nsamp number of observations from each precinct
-        k = sample(seq_len(n), nsamp)
-        x = x[k]
-        y = y[k]
-        n = nsamp
+      # sample nsamp number of observations from each precinct
+      k = sample(seq_len(n), nsamp)
+      x = x[k]
+      y = y[k]
+      n = nsamp
     }
-    nyc_geo_reduced = rbind(nyc_geo_reduced, cbind(x, y, rep(i, n)))
+  }
+  nyc_geo_reduced = rbind(nyc_geo_reduced, cbind(x, y, rep(i, n)))
 }
+
+# Set names for reduced data frame
 nyc_geo_reduced = setNames(nyc_geo_reduced, c('x', 'y', 'precinct'))
-
-# include central park data ----------------------------------------------
-
-c1 = c(-73.982, 40.768)     # bottom left corner
-c2 = c(-73.973, 40.765)     # bottom right corner
-c3 = c(-73.958, 40.801)     # top left corner
-
-m1 = (c2 - c1)
-m2 = (c3 - c1)
-
-x_seq = seq(10) / 10
-y_seq = seq(40) / 40
-count = 0
-p = matrix(ncol= 2, nrow = length(x_seq)*length(y_seq))
-
-for (i in x_seq) {
-
-    for (j in y_seq) {
-
-        count = count + 1
-        p[count,] = c1 + i * (c2 - c1) + j * (c3 - c1)
-
-    }
-}
-
-nyc_with_central = rbind(nyc_geo_reduced,
-                         cbind(precinct = rep(22, nrow(p)),
-                               x = p[,1],
-                               y = p[,2])
-                    )
-
-latlon = data.frame('lon' = nyc_with_central$x,
-                    'lat' = nyc_with_central$y)
-coord = SpatialPoints(latlon)
-plot(coord, col=nyc_with_central$precinct, pch=18, cex=0.5, axes=TRUE)
 
 # fit gradient boosted model ---------------------------------------------
 
