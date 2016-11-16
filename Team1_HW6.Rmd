@@ -21,6 +21,25 @@ Finally, we used `inner_join` to merge `nyc_man` data and `pluto_xy` data, and s
 
 
 ## Task 2: Recreating NYC’s Police Precincts
+write ups: 
+For the second task, we use 3 new packages in R, which are `raster`, `nnet` and `xgboost`. We first need to load package `raster` and then load `dplyr` to avoid select function being masked. 
+
+For this task, we first need to get the information about Manhattan. We can read the `nyc_geo.RDS` file from task one. Then, we can get the Manhattan information from nybb file under nyc_parking data by using `st_read`. We only need information about Manhattan, so we use dplyr to subset the Manhattan row. By using `filter()` function, we can select the rows of Manhattan, and get the boundary of Manhattan. 
+After this, we move to find  a raster that can cover the extend o Manhattan. We need to find a range based on the latitude(x) and longitude(y) of Manhattan boundary. We use `st_bbox` here from raster to do this, but we need to shuffle the order to "xmin","xmax","ymin","ymax", since raster needs specific order. After this, we use `extent()` to turn the raster to an extent class object. Then, we need to define a new raster object, and break this into 100 columns anf 300 rows (since NY is taller than its wide). From this, we get 30,000 cells, and we need to fill this in. We use `rasterize()` here, so that it will go in to polygon, connect to a spatial data, and give back raster. Then, we use `!is.na` to get rid of NA value from the data, and use `xyFromCell` function from raster to help to get the x, y value from raster r, and put the value into pred_locs.
+
+We move on to clean the nyc geo data. We know that in Manhattan, there are precinct from 1 to 34, and under each precinct there are many data points. Here by using a forloop, we will reduce some points. In the for loop, we use `which` function to get rid of the data that are outside the 90% quantile. By doing this, we can reduce our data amount, and get cleaner and more efficient data. By using `length()` we can know how many observations each precinct has. For the precincts has more than 1000 observations, we will randomly choose 1000 samples from that distinct. By doing this, we get 21,209 samples from the original `nyc_geo` data(1,640,133 samples), and the data amount is significantly reduced. 
+
+For our model, we use xgboost model (It’s a regression type of model). 
+Here we first turn the precincts into factor so that R order is going to match the order in xgboost too, and then level them to get the precinct. Then we define y and x variable, which x is our predictor variable and y is the outcome. In the xgboost, we need to turn the factor as an interger, and then shift them by 1, because xgboost start from 0. Also, x will be the 21,209 rows by 2 matrixes, include x and y from the precious for loop(longitude and latitude). 
+
+For our model:    
+
+
+Then, we take all the result values and plug them back into the raster objects, so that it keeped oriented in space and can track x and y values. We also need change `pred_xgb` into a numeric value. 
+
+After this, we use `polygonizer` to find the police districts.
+Then, we will plot the graphs and compare them. 
+
 
 ```{r, echo=FALSE}
 rm(list = ls())
