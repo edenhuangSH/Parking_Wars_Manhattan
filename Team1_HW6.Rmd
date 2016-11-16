@@ -28,10 +28,6 @@ source('precinct_predict.R')
 ```
 
 ```{r, echo=FALSE}
-
-```
-
-```{r, echo=FALSE}
 par(mfrow = c(1,2))
 latlon = data.frame('lon' = nyc_geo$x, 
                     'lat' = nyc_geo$y)

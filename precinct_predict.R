@@ -5,7 +5,8 @@ library(sf)
 library(sp)
 library(xgboost)
 
-# load nyc data and rasterize a grid of prediction locations -----------
+# load nyc data and rasterize a grid of prediction locations ------------
+
 nyc_geo = readRDS(file='nyc_geo.RDS')
 nybb = st_read("/data/nyc_parking/nybb/", quiet=TRUE)
 manh = nybb %>% filter(BoroName == "Manhattan")
@@ -19,7 +20,7 @@ pred_locs = xyFromCell(r, pred_cells)
 
 # sample from nyc geo data ----------------------------------------------
 
-man_precincts = c(1, 5, 6, 7, 9, 10, 13, 14, 17, 18, 19, 20, 22, 23,
+man_precincts = c(1, 5, 6, 7, 9, 10, 13, 14, 17, 18, 19, 20, 23,
                   24, 25, 26, 28, 30, 32, 33, 34)
 nyc_geo_reduced = data.frame()
 nsamp = 1000
@@ -47,13 +48,46 @@ for (i in man_precincts) {
 }
 nyc_geo_reduced = setNames(nyc_geo_reduced, c('x', 'y', 'precinct'))
 
+# include central park data ----------------------------------------------
+
+c1 = c(-73.982, 40.768)     # bottom left corner
+c2 = c(-73.973, 40.765)     # bottom right corner
+c3 = c(-73.958, 40.801)     # top left corner
+
+m1 = (c2 - c1)
+m2 = (c3 - c1)
+
+x_seq = seq(10) / 10
+y_seq = seq(40) / 40
+count = 0
+p = matrix(ncol= 2, nrow = length(x_seq)*length(y_seq))
+
+for (i in x_seq) {
+
+    for (j in y_seq) {
+
+        count = count + 1
+        p[count,] = c1 + i * (c2 - c1) + j * (c3 - c1)
+
+    }
+}
+
+nyc_with_central = rbind(nyc_geo_reduced,
+                         cbind(precinct = rep(22, nrow(p)),
+                               x = p[,1],
+                               y = p[,2])
+                    )
+
+latlon = data.frame('lon' = nyc_with_central$x,
+                    'lat' = nyc_with_central$y)
+coord = SpatialPoints(latlon)
+plot(coord, col=nyc_with_central$precinct, pch=18, cex=0.5, axes=TRUE)
+
 # fit gradient boosted model ---------------------------------------------
 
-library(xgboost)
-
-precincts = factor(nyc_geo_reduced$precinct) %>% levels()
-y = (factor(nyc_geo_reduced$precinct) %>% as.integer()) - 1L
-x = nyc_geo_reduced %>% select(x,y) %>% as.matrix()
+precincts = factor(nyc_with_central$precinct) %>% levels()
+y = (factor(nyc_with_central$precinct) %>% as.integer()) - 1L
+x = nyc_with_central %>% select(x,y) %>% as.matrix()
 
 dtrain = xgb.DMatrix(x, label = y)
 dtest  = xgb.DMatrix(pred_locs)
@@ -66,7 +100,7 @@ xgb_params = list(
     eta = 0.1,
     objective = 'multi:softmax',
     max_depth = 6,
-    min_child_weight = 100
+    min_child_weight = 1
 )
 
 res = xgb.cv(data = dtrain,
