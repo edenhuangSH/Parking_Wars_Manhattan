@@ -30,5 +30,5 @@ build:
     - script:
       name: Show Leaderboard
       code: |
-        curl -s "https://raw.githubusercontent.com/Sta523-Fa16/Homework/master/hw6/leaderboard.R" > leaderboard.R
+        wget --quiet "http://raw.githubusercontent.com/Sta523-Fa16/Homework/master/hw6/leaderboard.R"
         Rscript leaderboard.R
