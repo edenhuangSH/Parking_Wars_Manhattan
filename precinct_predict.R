@@ -114,14 +114,14 @@ res = xgb.cv(data = dtrain,
              early_stopping_rounds = 20,
              nfold = 5,
              verbose = 0,
-             num_class = length(precincts))
+             num_class = length(precincts) + 1)
 
 m = xgboost(data=x,
             label=y,
             nthead=4,
             nround=res$best_iteration,
             verbose = 0,
-            num_class=length(precincts))
+            num_class=length(precincts) + 1)
 
 pred_xgb = predict(m, newdata=as.matrix(pred_locs))
 pred_xgb = precincts[pred_xgb+1]
