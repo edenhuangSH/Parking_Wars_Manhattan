@@ -1,43 +1,28 @@
-box: rocker/hadleyverse
+box: rundel/hadleyverse_gis
 
 build:
   steps:
-    - script:
-      name: Install libraries
-      code: |
-        printf "deb http://httpredir.debian.org/debian testing main\ndeb http://httpredir.debian.org/debian testing-updates main\ndeb http://security.debian.org testing/updates main\ndeb-src http://http.debian.net/debian testing main\n" > /etc/apt/sources.list
-        apt-get update
-        apt-get install -y --no-install-recommends software-properties-common
-        add-apt-repository ppa:ubuntugis/ubuntugis-unstable
-        apt-get install -y --no-install-recommends curl libgdal-dev libgeos++-dev libproj-dev             
-
-    - script:
-      name: Install packages
-      code: |
-        Rscript -e "install.packages(c('jsonlite','rgdal','rgeos'), repos='https://cran.rstudio.com')"
-        Rscript -e "library(devtools); install_github('edzer/sfr')"
     - script: 
       name: Get scores
       code: |
-        echo "Hello world"
         curl -s "$PP" > pp.Rdata
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team0"  -u "$ORCH:" > Team0.json
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team1"  -u "$ORCH:" > Team1.json
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team2"  -u "$ORCH:" > Team2.json
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team3"  -u "$ORCH:" > Team3.json
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team4"  -u "$ORCH:" > Team4.json
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team5"  -u "$ORCH:" > Team5.json
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team6"  -u "$ORCH:" > Team6.json
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team7"  -u "$ORCH:" > Team7.json
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team8"  -u "$ORCH:" > Team8.json
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team9"  -u "$ORCH:" > Team9.json
-        curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team10" -u "$ORCH:" > Team10.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team0"  -u "$ORCH:" > Team0.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team1"  -u "$ORCH:" > Team1.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team2"  -u "$ORCH:" > Team2.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team3"  -u "$ORCH:" > Team3.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team4"  -u "$ORCH:" > Team4.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team5"  -u "$ORCH:" > Team5.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team6"  -u "$ORCH:" > Team6.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team7"  -u "$ORCH:" > Team7.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team8"  -u "$ORCH:" > Team8.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team9"  -u "$ORCH:" > Team9.json
+        curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/Team10" -u "$ORCH:" > Team10.json
     - script:
       name: Update scores
       code: |
-          curl -s "https://raw.githubusercontent.com/Sta523-Fa16/Homework/master/hw6/update_score.R" > update_score.R
+          wget --quiet "http://raw.githubusercontent.com/Sta523-Fa16/Homework/master/hw6/update_score.R"
           Rscript update_score.R $TEAM
-          curl -s "https://api.orchestrate.io/v0/Sta523-Fa16-HW6/$TEAM" \
+          curl -s "http://api.orchestrate.io/v0/Sta523-Fa16-HW6/$TEAM" \
             -XPUT \
             -H "Content-Type: application/json" \
             -u "$ORCH:" \
@@ -45,5 +30,5 @@ build:
     - script:
       name: Show Leaderboard
       code: |
-        curl -s "https://raw.githubusercontent.com/Sta523-Fa16/Homework/master/hw6/leaderboard.R" > leaderboard.R
+        wget --quiet "http://raw.githubusercontent.com/Sta523-Fa16/Homework/master/hw6/leaderboard.R"
         Rscript leaderboard.R
