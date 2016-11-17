@@ -44,7 +44,7 @@ for (i in seq_along(special_char)) {
                             nyc_man$address, perl = TRUE)
 }
 
-# replace place and street abbreviations with long form
+# replace place and street abbreviations with concise standardized name
 # E with EAST, PL with PLACE, ST with STREET, etc...
 abbrev = rbind( c('(?<!\\/)\\bE\\b(?!\\/)', 'EAST'),
                 c('(?<!\\/)\\bW\\b(?!\\/)', 'WEST'),
@@ -64,6 +64,7 @@ abbrev = rbind( c('(?<!\\/)\\bE\\b(?!\\/)', 'EAST'),
                 c('\\bMT\\b', 'MOUNT')
                 )
 
+# loop over the abbreviations 
 for (i in seq_len(nrow(abbrev))) {
     pluto_xy$address = gsub(abbrev[i,1], abbrev[i,2],
                             pluto_xy$address, perl = TRUE)

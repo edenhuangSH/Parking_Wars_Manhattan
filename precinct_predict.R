@@ -5,7 +5,7 @@ library(sf)
 library(sp)
 library(xgboost)
 
-# load nyc data and rasterize a grid of prediction locations ------------
+# Part I. Load nyc data and rasterize a grid of prediction locations ------------
 
 nyc_geo = readRDS(file='nyc_geo.RDS')
 nybb = st_read("/data/nyc_parking/nybb/", quiet=TRUE)
@@ -18,7 +18,9 @@ r = rasterize(as(manh,"Spatial"),r)
 pred_cells = which(!is.na(r[]))
 pred_locs = xyFromCell(r, pred_cells)
 
-# sample from nyc geo data ----------------------------------------------
+
+
+# Part II. Rejection sampling from nyc geo data ----------------------------------------------
 
 man_precincts = c(1, 5, 6, 7, 9, 10, 13, 14, 17, 18, 19, 20, 23,
                   24, 25, 26, 28, 30, 32, 33, 34)
@@ -30,8 +32,8 @@ for (i in man_precincts) {
     y = nyc_geo[nyc_geo$precinct == i,]$y
 
     # reject samples that are outside 90% quantile
-    indx = which(x > quantile(x, 0.05) & x < quantile(x, 0.95))
-    indy = which(y > quantile(y, 0.05) & y < quantile(y, 0.95))
+    indx = which(x > quantile(x, 0.025) & x < quantile(x, 0.975))
+    indy = which(y > quantile(y, 0.025) & y < quantile(y, 0.975))
     ind = intersect(indx, indy)
     x = x[ind]
     y = y[ind]
@@ -93,7 +95,9 @@ n = length(rand.lower.x)+length(rand.upper.x)
 nyc_with_central = rbind(nyc_geo_reduced,
                          cbind(x = x, y = y, precinct = rep(22, length(x))))
 
-# fit gradient boosted model ---------------------------------------------
+
+
+# Part III: Fit gradient boosted model ---------------------------------------------
 
 precincts = factor(nyc_with_central$precinct) %>% levels()
 y = (factor(nyc_with_central$precinct) %>% as.integer()) - 1L

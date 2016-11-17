@@ -8,37 +8,50 @@ output: html_document
 ## Setup
 
 ## Task 1: Geocoding
-Write ups:
-In Task 1, we use 2 main packages, dplyr and sf. Especially, by using sf package, we can handle spatial data, read, write, query and manipulate spatial data. After installing the packages, we load data of NYC parking violation data. 
-Also, we use `st_read` to read the `pluto` data (spatial data) and read this into R. In this data, there are 42,890 features(rows) and 84 fields (columns). The data we need for this task, is the `Address` and `geometry` from the data, so we put those 2 into a data frame.  From the geometry, we want the center point from a polygon, so we use `st_centroid` to get the latitude and longitude from pluto. Then, we can use `unlist` to flatten the x, y value of the point into a factor, and convert the vector to a matrix, pipe the result. 
-From the NYC data, we have house number, and the street name. so we take those 2 columns, and create a new column called `Address`, by pasting those 2 columns together. Also, since we only need data from Manhattan, so we filter the precincts from the NYC data only in Manhattan precincts. After this, we only need to keep `nyc_man` data and `pluto_xy`, so we remove data of nyc and pluto here, to not cause confusion in R, in the same time make the code clearer and efficient. 
-After creating the data frame, we move to cleaning the data. 
-First, we changed all the address letters to capital, so that all the data are in the same case, to ensure more address will be included. 
-Also, we removed NA values because there are no house address, and we removed special characters and double spaces by using a for loop. 
-Additionally, we replaced place and street abbreviations with long form so that the address can be in a more concise style also by using a for loop. For example, we use E instead of EAST, PL instead of PLACE, ST instead of STREET and so on.
-Another thing we did, is that we remove the ordinal names, such 1st to 1, 2NDto 2, 3RDo 3 by using a for loop again, so that we can get as much as data as possible. All ordinal names, street long form, or letter type will cause less data, so we clean these up to get more data. Then, we fixed the specific newyork street. 
-Finally, we used `inner_join` to merge `nyc_man` data and `pluto_xy` data, and saved as `nyc_geo.RDS`
+
+In Task 1, we use 2 main packages, `dplyr` and `sf`. `sf` package, in particular, allows us to read, write, query and manipulate spatial data. After installing the packages, we load data of NYC parking violation data. 
+
+For a faster loading speed, we used `st_read` to read the `pluto` data (spatial data) and read this into R. In this data, there are 42,890 features (rows) and 84 fields (columns). The data we need from the dataset for this task is `address` and `geometry`, so we organize those 2 variables into a data frame. The geometric analysis shows that we need the center point from a polygon, so we use `st_centroid` to retrieve the latitude and longitude information from pluto. Then, we use `unlist` to flatten the x, y values of the center points into factors, and convert the vectors to a matrix and pipe the results. 
+
+The NYC data includes house numbers and street names. We subset the dataset into these 2 columns, and create a new column called `Address` by pasting those 2 columns. Since we only need data from Manhattan, we filter the precincts from the NYC data only in Manhattan precincts. After the previous steps, we only need to keep `nyc_man` and `pluto_xy`, and hence remove data of nyc and pluto to avoid confusion in R and improve the efficiency. 
+
+After creating the data frame, we move on to data cleaning on specific New York streets. First, to ensure the inclusion of more address, we changed all the letters of address to capital cases such that all the data are in the same case. Also, we removed NA values where house address does not exist, and removed special characters and double spaces by using a for loop. 
+
+Additionally, we replaced the abbreviations of place and street with concise and standardized forms by using a for loop. For example, we use "E"" instead of "EAST", "PL" instead of "PLACE", "ST" instead of "STREET" and so on.
+
+Note that all ordinal names, street long form, or letter type will lesssen the data entries. Therefore, we also altered some ordinal names, such as from "1st"" to "1"", "2ND" to "2"", "3RD" to "3"" by using another for loop. 
+
+Finally, we used `inner_join` function to merge `nyc_man` and `pluto_xy` data, and saved as `nyc_geo.RDS`. 
+
+
 
 
 ## Task 2: Recreating NYC’s Police Precincts
-write ups: 
-For the second task, we use 3 new packages in R, which are `raster`, `nnet` and `xgboost`. We first need to load package `raster` and then load `dplyr` to avoid select function being masked. 
 
-For this task, we first need to get the information about Manhattan. We can read the `nyc_geo.RDS` file from task one. Then, we can get the Manhattan information from nybb file under nyc_parking data by using `st_read`. We only need information about Manhattan, so we use dplyr to subset the Manhattan row. By using `filter()` function, we can select the rows of Manhattan, and get the boundary of Manhattan. 
-After this, we move to find  a raster that can cover the extend o Manhattan. We need to find a range based on the latitude(x) and longitude(y) of Manhattan boundary. We use `st_bbox` here from raster to do this, but we need to shuffle the order to "xmin","xmax","ymin","ymax", since raster needs specific order. After this, we use `extent()` to turn the raster to an extent class object. Then, we need to define a new raster object, and break this into 100 columns anf 300 rows (since NY is taller than its wide). From this, we get 30,000 cells, and we need to fill this in. We use `rasterize()` here, so that it will go in to polygon, connect to a spatial data, and give back raster. Then, we use `!is.na` to get rid of NA value from the data, and use `xyFromCell` function from raster to help to get the x, y value from raster r, and put the value into pred_locs.
+### Part 1
+For the second task, we use 3 new packages in R, which are `raster`, `nnet` and `xgboost`. We loaded `raster` prior to `dplyr` to avoid the duplicate mask of `select` function. 
 
-We move on to clean the nyc geo data. We know that in Manhattan, there are precinct from 1 to 34, and under each precinct there are many data points. Here by using a forloop, we will reduce some points. In the for loop, we use `which` function to get rid of the data that are outside the 90% quantile. By doing this, we can reduce our data amount, and get cleaner and more efficient data. By using `length()` we can know how many observations each precinct has. For the precincts has more than 1000 observations, we will randomly choose 1000 samples from that distinct. By doing this, we get 21,209 samples from the original `nyc_geo` data(1,640,133 samples), and the data amount is significantly reduced. 
+First we load nyc data and rasterize a grid of prediction locations. After reading the `nyc_geo.RDS` file created by task 1, we get the Manhattan information from nybb file under nyc_parking data by using `st_read`. Since we only need information about Manhattan, we use `filter()` to select the rows and get the boundary of Manhattan. 
 
-For our model, we use xgboost model (It’s a regression type of model). 
-Here we first turn the precincts into factor so that R order is going to match the order in xgboost too, and then level them to get the precinct. Then we define y and x variable, which x is our predictor variable and y is the outcome. In the xgboost, we need to turn the factor as an interger, and then shift them by 1, because xgboost start from 0. Also, x will be the 21,209 rows by 2 matrixes, include x and y from the precious for loop(longitude and latitude). 
+We move on to find a raster that can cover the area of Manhattan. We need to find a range based on the latitude(x) and longitude(y) of Manhattan boundary using `st_bbox` from `raster` library. But we need to shuffle the order to "xmin","xmax","ymin" and "ymax", since raster requires a specific order. 
 
-For our model:    
+Then we use `extent()` to turn the raster to an extent class object. We define a new raster object and break it into 100 columns and 300 rows, 30,000 cells in total. We use `rasterize()` to call polygon, connect to spatial data, and return the raster. Then, we use `!is.na` to get rid of NA value from the data, and use `xyFromCell` function from raster to retrieve the x, y values from raster r and put the values into `pred_locs`.
 
 
-Then, we take all the result values and plug them back into the raster objects, so that it keeped oriented in space and can track x and y values. We also need change `pred_xgb` into a numeric value. 
+### Part 2
+We move on to reduce the NYC geodata by rejection sampling. We know that in Manhattan, there are precincts from 1 to 34. We use `which` function in a for loop to get rid of the data that outside the 90% quantiles. Using `length()` we can know the number of observations each precinct has. For the precincts with more than 1000 observations, we will randomly choose 1000 samples from that precinct. This method generates 21,209 samples from the original `nyc_geo` data(1,640,133 samples), and hence the data amount is significantly reduced. 
 
-After this, we use `polygonizer` to find the police districts.
-Then, we will plot the graphs and compare them. 
+After reducing the model, we added the dummy data for the special case of central park, since parking is not allowed in central park. We get the longitude and latitude of central park for the 4 corners from Google Map. Then, we separate the quadrangle into 2 triangles. The upper triangle has NW, SW and NE corners, and lower triangle has NE, SW and SE corners. We generate equal numbers of dummy points for both triangles, since the areas are similar. Finally, we use `cbind` to combine the x, y and precinct data, and then combine `nyc_with_central` with `nyc_geo_reduced` data using `rbind`. 
+
+
+### Part 3
+To assess the performance of our prediction, we need to fit a model. We use a type of regression model, `xgboost`. The `xgboost` package we use is version 0.6-0, which can be installed using command `install.packages("xgboost", repos="http://dmlc.ml/drat/", type = "source")`.
+
+We first turn the precincts into factors to allow R to match the order in xgboost, and then level them to get the precincts. Then we define y and x variables, where x is our predictor and y is the outcome. In the xgboost function, we turn the precints into factors, record the levels as labels, and then deduce the levels by 1 since xgboost uses labels starting from 0. Also, x will be 21,209 rows by 2 matrices, include x and y from the previous for loops (longitude and latitude). 
+
+To implement our xgboost model, we used a train set and a test set where the train set is the x matrix defined above and the test set is the coordinates of the the locations to be precticted (`pred_locs`). We also use labels from 0 to 21, as there are 22 precincts in Manhatton. We generate the model using `xgboost` from the `xgboost` package using the training data and predict the test data using the `predict` function. To translate the prediction back to the precincts we want, we extract the precinct numbers according to the labels(e.g. precinct 5 corresponds to label 1). Note that since labels in `xgboost` starts from 0, we need to add 1 to all the labels when we subsetting the precinct numbers (e.g. precinct 5 corresponds to label 1, but it's the 2nd item in the vector `precints`). Then, we take all the result values and plug them back into the raster objects to keep oriented in space and  track x and y values. We also change `pred_xgb` into numeric value. 
+
+Finally, we use `polygonizer` given by Collin to find the police districts and plot the graph of polygon. 
 
 
 ```{r, echo=FALSE}
@@ -59,8 +72,7 @@ coord = SpatialPoints(latlon)
 plot(coord, col=nyc_geo_reduced$precinct, pch=18, cex=0.5, axes=TRUE)
 ```
 
-Use polygonizer to create a polygon object.
-
+Use polygonizer to create a polygon object:
 ```{r, echo=FALSE}
 plot(p)
 ```
