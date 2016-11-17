@@ -30,8 +30,8 @@ for (i in man_precincts) {
     y = nyc_geo[nyc_geo$precinct == i,]$y
 
     # reject samples that are outside 90% quantile
-    indx = which(x > quantile(x, 0.05) & x < quantile(x, 0.95))
-    indy = which(y > quantile(y, 0.05) & y < quantile(y, 0.95))
+    indx = which(x > quantile(x, 0.025) & x < quantile(x, 0.975))
+    indy = which(y > quantile(y, 0.025) & y < quantile(y, 0.975))
     ind = intersect(indx, indy)
     x = x[ind]
     y = y[ind]
